@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+      http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-init-schema" author="you">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="subscriptions"/></not>
+            <not><tableExists tableName="users"/></not>
+        </preConditions>
+
+        <!-- ENUMs -->
+        <sql>
+            CREATE TYPE subscription_service_enum AS ENUM (
+                'YOUTUBE_PREMIUM',
+                'VK_MUSIC',
+                'YANDEX_PLUS',
+                'NETFLIX'
+            );
+        </sql>
+
+        <!-- создание таблицы users -->
+        <createTable tableName="users">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="TEXT">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="TEXT"/>
+        </createTable>
+
+        <!--создание таблицы subscriptions -->
+        <createTable tableName="subscriptions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="service" type="subscription_service_enum">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                constraintName="fk_subscriptions_user"
+                baseTableName="subscriptions"
+                baseColumnNames="user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <!-- индексы -->
+        <createIndex indexName="uq_users_email" tableName="users" unique="true">
+            <column name="email"/>
+        </createIndex>
+        <createIndex indexName="idx_subscriptions_user" tableName="subscriptions">
+            <column name="user_id"/>
+        </createIndex>
+
+        <!-- уникальное ограничение: одна и та же подписка не может повторяться у одного пользователя -->
+        <addUniqueConstraint
+                tableName="subscriptions"
+                columnNames="user_id, service"
+                constraintName="uq_subscriptions_user_service"/>
+
+    </changeSet>
+</databaseChangeLog>
